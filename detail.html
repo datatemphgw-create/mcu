@@ -116,7 +116,8 @@
                                     <div class="card-header bg-primary text-white text-center pt-4">
                                         <div id="qrcode-container" class="mx-auto mb-3 d-inline-block rounded"></div>
                                         <h1>${pasien.nama}</h1>
-                                        <p class="mb-0">MRN: ${pasien.mrn}</p>
+                                        <p class="mb-0 fw-bold">MRN: ${mrn}</p> <!-- Tampilkan MRN secara visual -->
+                                        <p class="mb-0 small">(Pindai QR di atas untuk update di Pos Pemeriksaan)</p>
                                     </div>
                                     <div class="card-body">
                                         <h5 class="card-title text-center mb-3">Progres Pemeriksaan</h5>
@@ -128,15 +129,24 @@
                             `;
 
                             if (detailContainer.innerHTML !== newContent) {
-                                detailContainer.innerHTML = newContent;
-                                // Generate QR Code
-                                new QRCode(document.getElementById("qrcode-container"), {
-                                    text: pasien.mrn,
-                                    width: 128,
-                                    height: 128,
-                                    colorDark : "#000000",
-                                    colorLight : "#ffffff",
-                                    correctLevel : QRCode.CorrectLevel.H
+                                detailContainer.innerHTML = newContent; // Render konten baru
+
+                                // Pastikan container QR ada dan kosongkan sebelum membuat yang baru
+                                const qrcodeContainerEl = document.getElementById("qrcode-container");
+                                if (qrcodeContainerEl) {
+                                    qrcodeContainerEl.innerHTML = "";
+                                }
+
+                                // Tunda pembuatan QR code hingga setelah DOM di-update
+                                setTimeout(() => {
+                                    new QRCode(qrcodeContainerEl, {
+                                        text: mrn, // Mengambil MRN langsung dari URL
+                                        width: 250, // Perbesar ukuran QR code
+                                        height: 250, // Perbesar ukuran QR code
+                                        colorDark : "#000000",
+                                        colorLight : "#ffffff",
+                                        correctLevel : QRCode.CorrectLevel.H
+                                    });
                                 });
                             }
                         } else {
