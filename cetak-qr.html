@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak QR Pasien</title>
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+        }
+        .print-area {
+            text-align: center;
+            padding: 20px;
+            background-color: #fff;
+            width: 210mm; /* Lebar standar kertas A4, bisa disesuaikan */
+            min-height: 297mm;
+            margin: 0 auto;
+        }
+        #qrcode {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        h2, p {
+            margin: 5px 0;
+        }
+        .screen-only {
+            margin-top: 20px;
+            color: #666;
+        }
+        .footer-note {
+            margin-top: 25px;
+            font-style: italic;
+            color: #333;
+        }
+
+        /* Progress Table Styles */
+        .progress-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .progress-table th, .progress-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .progress-table th {
+            background-color: #f2f2f2;
+        }
+        .progress-table .status-icon {
+            font-size: 1.2em;
+            text-align: center;
+        }
+        .progress-table tr.completed {
+            background-color: #e7f5e7; /* Light green */
+            color: #155724;
+        }
+        .progress-table tr.pending {
+            background-color: #f8f9fa; /* Light grey */
+        }
+
+        @media screen {
+            body {
+                background-color: #f0f0f0;
+            }
+            .print-area {
+                border: 1px dashed #999;
+                min-height: auto; /* Hapus tinggi minimum untuk tampilan layar */
+                width: auto;
+                max-width: 400px; /* Batasi lebar di layar agar tidak terlalu besar */
+                margin-top: 2rem;
+                margin-bottom: 2rem;
+            }
+        }
+
+        @media print {
+            .print-area {
+                box-shadow: none;
+            }
+            .screen-only {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="print-area" id="print-area">
+        <div id="content">
+            <p>Memuat data...</p>
+        </div>
+        <p class="screen-only">Halaman ini akan dicetak secara otomatis.</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const contentDiv = document.getElementById('content');
+            const BASE_URL = 'https://script.google.com/macros/s/AKfycbyy3KSVJTjsVozvo5MWcsbuPjYdzZ0t6c1Ske5DcNQXS5ERglK6JeFViLD4plQrVIlQ/exec';
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const mrn = urlParams.get('mrn');
+
+            if (!mrn) {
+                contentDiv.innerHTML = `<p>Error: MRN tidak ditemukan di URL.</p>`;
+                return;
+            }
+
+            const FIND_URL = `${BASE_URL}?action=find&mrn=${mrn}`;
+
+            fetch(FIND_URL)
+                .then(response => response.json())
+                .then(res => {
+                    if (res.status) {
+                        const pasien = res.data;
+                        
+                        contentDiv.innerHTML = `
+                            <h2>${pasien.nama}</h2>
+                            <p>MRN: ${pasien.mrn}</p>
+                            <div id="qrcode"></div>
+                            <p class="footer-note">Jika selesai, silahkan kembali ke petugas administrasi pendaftaran.</p>
+                            <table class="progress-table" id="progress-table"></table>
+                        `;
+
+                        new QRCode(document.getElementById("qrcode"), {
+                            text: pasien.mrn,
+                            width: 150,
+                            height: 150,
+                        });
+
+                        // Buat tabel progres
+                        const progressTable = document.getElementById('progress-table');
+                        const steps = [
+                            { name: 'Timbang Tensi', value: pasien.timbang_tensi, icon: '✅' },
+                            { name: 'Visus', value: pasien.visus, icon: '✅' },
+                            { name: 'Lab', value: pasien.lab, icon: '✅' },
+                            { name: 'Urine', value: pasien.urine, icon: '✅' },
+                            { name: 'EKG', value: pasien.ekg, icon: '✅' },
+                            { name: 'Rontgen', value: pasien.rontgen, icon: '✅' },
+                            { name: 'Dokter', value: pasien.dokter, icon: '✅' },
+                            { name: 'Treadmill', value: pasien.treadmill, icon: '✅' },
+                            { name: 'BIA', value: pasien.bia, icon: '✅' },
+                            { name: 'Spirometri', value: pasien.spirometri, icon: '✅' },
+                            { name: 'Audiometri', value: pasien.audiometri, icon: '✅' },
+                            { name: 'Papsmear', value: pasien.papsmear, icon: '✅' }
+                        ];
+
+                        steps.forEach(step => {
+                            // Jika kolom berisi 'tidak dilakukan', jangan tampilkan langkah ini
+                            if (typeof step.value === 'string' && step.value.toLowerCase().includes('tidak dilakukan')) {
+                                return; // Lewati ke langkah berikutnya
+                            }
+
+                            const row = progressTable.insertRow();
+                            row.className = step.value ? 'completed' : 'pending';
+                            row.innerHTML = `<td>${step.name}</td><td class="status-icon">${step.value ? step.icon : ''}</td>`;
+                        });
+
+                        // Tunggu sebentar agar QR code selesai digambar, lalu cetak
+                        setTimeout(() => {
+                            window.print();
+                        }, 500);
+
+                    } else {
+                        contentDiv.innerHTML = `<p>Error: ${res.message}</p>`;
+                    }
+                })
+                .catch(error => {
+                    contentDiv.innerHTML = `<p>Error: Gagal mengambil data pasien.</p>`;
+                    console.error('Fetch error:', error);
+                });
+
+            // Setelah mencetak atau membatalkan, jendela bisa ditutup
+            window.onafterprint = () => {
+                window.close();
+            };
+        });
+    </script>
+
+</body>
+</html>

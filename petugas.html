@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Tambahkan QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+    <!-- Tambahkan SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <title>Dashboard Input Data</title>
+    <style>
+        /* Menggunakan font modern dari Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+        :root {
+            --primary-color: #007BFF;
+            --primary-hover-color: #0056b3;
+            --background-color: #f4f7f6;
+            --form-background-color: #ffffff;
+            --text-color: #333;
+            --border-color: #ddd;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            font-size: 0.95rem; /* Mengurangi ukuran font dasar */
+            padding: 2.5%; /* Padding seragam 2.5% di semua sisi */
+            /* Beri sedikit ruang di sekitar body */
+        }
+
+        .content-card {
+            width: 100%;
+            padding: 2rem;
+            background-color: var(--form-background-color);
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .table-container {
+            width: 100%;
+            padding: 0; /* Hapus padding container, karena sudah dihandle body */
+        }
+
+        h1 {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        h2 {
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem; /* Perkecil font judul h2 */
+            font-weight: 600;
+        }
+
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.5rem 1rem;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+            border-top: 1px solid #eee;
+            padding-top: 1.5rem;
+        }
+
+        .form-check-label {
+            cursor: pointer;
+        }
+
+        .form-check-input {
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 400;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 0.9rem; /* Perkecil font input */
+            font-family: 'Poppins', sans-serif;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;            
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .submit-btn:hover {
+            background-color: var(--primary-hover-color);
+        }
+
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Style untuk tabel data */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 0.4rem; /* Padding diperkecil lagi */
+            border-bottom: 1px solid var(--border-color);
+            border-left: 1px solid var(--border-color); /* Garis kolom kiri */
+            border-right: 1px solid var(--border-color); /* Garis kolom kanan */
+            font-size: 0.8rem; /* Perkecil lagi font tabel */
+            white-space: nowrap;
+            /* Mencegah teks turun baris */
+        }
+
+        .data-table thead th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            text-align: center; /* Tengahkan tulisan di header */
+        }
+
+        .data-table tbody td {
+            text-align: left; /* Ratakan kiri tulisan di baris data */
+        }
+
+        .data-table tbody td.status-cell {
+            text-align: center; /* Tengahkan konten di sel status/waktu */
+        }
+
+        .data-table tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .time-badge {
+            background-color: #e9ecef;
+            color: #495057;
+            padding: 0.2em 0.5em;
+            border-radius: 0.25rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .action-btn {
+            padding: 0.3rem 0.6rem;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.75rem; /* Perkecil font tombol aksi */
+            margin-right: 5px;
+        }
+
+        .edit-btn {
+            background-color: #ffc107;
+        }
+
+        .edit-btn:hover {
+            background-color: #e0a800;
+        }
+
+        .delete-btn {
+            background-color: var(--error-color);
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+
+        .qr-mrn-btn {
+            background-color: #17a2b8;
+        }
+
+        .qr-mrn-btn:hover {
+            background-color: #138496;
+        }
+
+        .detail-btn {
+            background-color: #6c757d;
+            /* A neutral grey */
+        }
+
+        .detail-btn:hover {
+            background-color: #5a6268;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 2rem;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 700px; /* Perbesar lebar modal */
+            border-radius: 10px;
+            position: relative;
+            animation: fadeInZoom 0.3s ease-out;
+        }
+
+        .modal-content h1 {
+            font-size: 1.25rem;
+            /* Perkecil font judul modal */
+            position: relative;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .close-btn {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 25px;
+            font-size: 35px;
+            font-weight: bold;
+        }
+
+        .close-btn:hover,
+        .close-btn:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .add-btn-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Animasi untuk Modal */
+        @keyframes fadeInZoom {
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* QR Modal Specific Styles */
+        .qr-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            gap: 2rem;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .qr-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .modal-footer-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Modal untuk Form -->
+    <div id="formModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h1 id="modal-title">Input Data Pasien</h1>
+            <form id="dataForm">
+                <input type="hidden" id="form-mode" value="create">
+                <div class="form-group">
+                    <label for="mrn">MRN (Medical Record Number)</label>
+                    <input type="text" id="mrn" name="mrn" required>
+                </div>
+                <div class="form-group">
+                    <label for="nama">Nama Pasien</label>
+                    <input type="text" id="nama" name="nama" required>
+                </div>
+                <div class="steps-grid">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="check-timbang_tensi" checked>
+                        <label class="form-check-label" for="check-timbang_tensi">Timbang Tensi</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="check-visus" checked>
+                        <label class="form-check-label" for="check-visus">Visus</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="check-lab" checked>
+                        <label class="form-check-label" for="check-lab">Lab</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="check-urine" checked>
+                        <label class="form-check-label" for="check-urine">Urine</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="check-ekg" checked>
+                        <label class="form-check-label" for="check-ekg">EKG</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="check-rontgen" checked>
+                        <label class="form-check-label" for="check-rontgen">Rontgen</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="check-dokter" checked>
+                        <label class="form-check-label" for="check-dokter">Dokter</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="check-treadmill" checked>
+                        <label class="form-check-label" for="check-treadmill">Treadmill</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="check-bia" checked>
+                        <label class="form-check-label" for="check-bia">BIA</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="check-spirometri" checked>
+                        <label class="form-check-label" for="check-spirometri">Spirometri</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="check-audiometri" checked>
+                        <label class="form-check-label" for="check-audiometri">Audiometri</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="check-papsmear" checked>
+                        <label class="form-check-label" for="check-papsmear">Papsmear</label>
+                    </div>
+                </div>
+                <button type="submit" id="submit-btn" class="submit-btn">Kirim Data</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal untuk QR MRN -->
+    <div id="qrMrnModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-qr-mrn-modal">&times;</span>
+            <h1 id="qr-mrn-modal-title">QR Code MRN</h1>
+            <div class="qr-container">
+                <div class="qr-box">
+                    <div id="qr-code-mrn"></div>
+                    <strong>QR untuk MRN</strong>
+                </div>
+            </div>
+            <div class="modal-footer-buttons" style="margin-top: 1.5rem;">
+                <button id="print-qr-btn" class="btn btn-primary"><i class="fas fa-print me-1"></i> Cetak QR</button>
+                <button id="close-qr-mrn-modal-btn" class="btn btn-secondary">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal untuk Halaman Detail -->
+    <div id="qrDetailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-qr-detail-modal">&times;</span>
+            <h1 id="qr-detail-modal-title">Detail Progres Pasien</h1>
+            <div id="qr-code-detail-container">
+                <!-- Detail dan langkah-langkah akan ditampilkan di sini -->
+            </div>
+            <div class="modal-footer-buttons" style="margin-top: 1.5rem;">
+                <button id="close-qr-detail-modal-btn-bottom" class="btn btn-secondary">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid content-card" id="data-pasien-container">
+        <div class="add-btn-container">
+            <h2><i class="fas fa-users"></i> Daftar Pasien Hari Ini</h2>
+            <div>
+                <a href="index.html" class="btn btn-secondary me-2"><i class="fas fa-home me-1"></i> Home</a>
+                <a href="report.html" target="_blank" class="btn btn-info me-2"><i class="fas fa-chart-line me-1"></i> Laporan</a>
+                <button id="add-patient-btn" class="btn btn-success"><i class="fas fa-plus me-1"></i> Tambah Pasien</button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Pasien</th>
+                        <th>Pendaftaran</th>
+                        <th>Timbang Tensi</th>
+                        <th>Visus</th>
+                        <th>Lab</th>
+                        <th>Urine</th>
+                        <th>EKG</th>
+                        <th>Rontgen</th>
+                        <th>Dokter</th>
+                        <th>Treadmill</th>
+                        <th>BIA</th>
+                        <th>Spirometri</th>
+                        <th>Audiometri</th>
+                        <th>Papsmear</th>
+                        <th>Total Waktu</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="patient-data-body">
+                    <!-- Data akan diisi oleh JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('dataForm');
+        const patientTableBody = document.getElementById('patient-data-body');
+        const modal = document.getElementById('formModal');
+        const qrMrnModal = document.getElementById('qrMrnModal');
+        const qrDetailModal = document.getElementById('qrDetailModal');
+        const addPatientBtn = document.getElementById('add-patient-btn');
+        const closeModalBtn = document.querySelector('.close-btn');
+        const closeQrMrnModalBtn = document.getElementById('close-qr-mrn-modal');
+        const closeQrDetailModalBtn = document.getElementById('close-qr-detail-modal');
+        const closeQrDetailModalBtnBottom = document.getElementById('close-qr-detail-modal-btn-bottom');
+        const modalTitle = document.getElementById('modal-title');
+        const mrnInput = document.getElementById('mrn');
+        const namaInput = document.getElementById('nama');
+        const formModeInput = document.getElementById('form-mode');
+        const submitBtn = document.getElementById('submit-btn');
+
+        // GANTI DENGAN URL WEB APP GOOGLE SCRIPT ANDA
+        const BASE_URL = 'https://script.google.com/macros/s/AKfycbyy3KSVJTjsVozvo5MWcsbuPjYdzZ0t6c1Ske5DcNQXS5ERglK6JeFViLD4plQrVIlQ/exec';
+
+        // Definisikan URL endpoint untuk setiap aksi
+        const READ_URL = `${BASE_URL}?action=read`;
+        const FIND_URL = (mrn) => `${BASE_URL}?action=find&mrn=${mrn}`;
+        const POST_URL = BASE_URL; // URL untuk semua aksi POST (Create, Update, Delete)
+
+        // --- Modal Logic ---
+        addPatientBtn.onclick = () => {
+            form.reset();
+            formModeInput.value = 'create';
+            modalTitle.textContent = 'Input Data Pasien';
+
+            // Pastikan semua checkbox kembali ter-ceklis saat modal dibuka
+            document.getElementById('check-timbang_tensi').checked = true;
+            document.getElementById('check-visus').checked = true;
+            document.getElementById('check-lab').checked = true;
+            document.getElementById('check-urine').checked = true;
+            document.getElementById('check-ekg').checked = true;
+            document.getElementById('check-rontgen').checked = true;
+            document.getElementById('check-dokter').checked = true;
+            document.getElementById('check-treadmill').checked = true;
+            document.getElementById('check-bia').checked = true;
+            document.getElementById('check-spirometri').checked = true;
+            document.getElementById('check-audiometri').checked = true;
+            document.getElementById('check-papsmear').checked = true;
+
+            submitBtn.textContent = 'Kirim Data';
+            mrnInput.readOnly = false;
+            modal.style.display = 'block';
+        }
+        closeModalBtn.onclick = () => { modal.style.display = 'none'; };
+        closeQrMrnModalBtn.onclick = () => { qrMrnModal.style.display = 'none'; };
+        document.getElementById('close-qr-mrn-modal-btn').onclick = () => {
+            qrMrnModal.style.display = 'none';
+        };
+        closeQrDetailModalBtn.onclick = () => { qrDetailModal.style.display = 'none'; };
+        closeQrDetailModalBtnBottom.onclick = () => { qrDetailModal.style.display = 'none'; };
+        window.onclick = (event) => {
+            if (event.target == qrMrnModal) {
+                qrMrnModal.style.display = 'none';
+            }
+            if (event.target == qrDetailModal) {
+                qrDetailModal.style.display = 'none';
+            }
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Helper function untuk memformat status menjadi ikon
+        const formatStatus = (value) => {
+            if (!value) return ''; // Kosong jika belum ada
+            // Cek jika 'tidak dilakukan'
+            if (typeof value === 'string' && value.toLowerCase().includes('tidak dilakukan')) {
+                return '<i class="fas fa-times" style="color: var(--error-color);"></i>';
+            }
+            // Cek jika ada timestamp (selesai)
+            const date = new Date(value);
+            if (!isNaN(date.getTime())) {
+                // Gunakan ikon check-circle dari Font Awesome
+                return '<i class="fas fa-check-circle" style="color: var(--success-color);"></i>';
+            }
+            return ''; // Default
+        };
+
+        // Fungsi untuk mengambil dan menampilkan data
+        const fetchAndDisplayData = () => {
+            // Tampilkan pesan loading
+            patientTableBody.innerHTML = '<tr><td colspan="17" style="text-align:center;">Memuat data...</td></tr>';
+
+            fetch(READ_URL)
+                .then(response => response.json())
+                .then(res => {
+                    patientTableBody.innerHTML = ''; // Kosongkan tabel body
+                    if (res.status && res.data.length > 0) {
+                        res.data.forEach((pasien, index) => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${index + 1}</td>
+                                <td>
+                                    <strong>${pasien.nama}</strong><br>
+                                    <small style="color: #6c757d;">${pasien.mrn}</small>
+                                </td>
+                                <td class="status-cell">${formatStatus(pasien.pendaftaran)}</td>
+                                <td class="status-cell">${formatStatus(pasien.timbang_tensi)}</td>
+                                <td class="status-cell">${formatStatus(pasien.visus)}</td>
+                                <td class="status-cell">${formatStatus(pasien.lab)}</td>
+                                <td class="status-cell">${formatStatus(pasien.urine)}</td>
+                                <td class="status-cell">${formatStatus(pasien.ekg)}</td>
+                                <td class="status-cell">${formatStatus(pasien.rontgen)}</td>
+                                <td class="status-cell">${formatStatus(pasien.dokter)}</td>
+                                <td class="status-cell">${formatStatus(pasien.treadmill)}</td>
+                                <td class="status-cell">${formatStatus(pasien.bia)}</td>
+                                <td class="status-cell">${formatStatus(pasien.spirometri)}</td>
+                                <td class="status-cell">${formatStatus(pasien.audiometri)}</td>
+                                <td class="status-cell">${formatStatus(pasien.papsmear)}</td>
+                                <td>${pasien.total_waktu || ''}</td>
+                                <td class="text-center">
+                                    <button class="action-btn edit-btn" data-mrn="${pasien.mrn}" title="Edit"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn qr-mrn-btn" data-mrn="${pasien.mrn}" title="QR MRN"><i class="fas fa-qrcode"></i></button>
+                                    <button class="action-btn detail-btn" data-mrn="${pasien.mrn}" title="Detail Progres"><i class="fas fa-tasks"></i></button>
+                                    <button class="action-btn delete-btn" data-mrn="${pasien.mrn}" title="Hapus"><i class="fas fa-trash-alt"></i></button>
+                                </td>
+                            `;
+                            patientTableBody.appendChild(row);
+                        });
+                    } else {
+                        patientTableBody.innerHTML = '<tr><td colspan="17" class="text-center">Belum ada data.</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching data!', error.message);
+                    patientTableBody.innerHTML = '<tr><td colspan="17" class="text-center text-danger">Gagal memuat data.</td></tr>';
+                });
+        };
+
+        // Event listener untuk form submission (Create data)
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+
+            const originalButtonHTML = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Mengirim...`;
+
+            // Siapkan data untuk dikirim dalam format JSON
+            const formData = new FormData(form);
+            const formMode = formModeInput.value;
+
+            // Validasi sederhana
+            if (!formData.get('mrn') || !formData.get('nama')) {
+                Swal.fire('Peringatan', 'MRN dan Nama Pasien wajib diisi.', 'warning');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalButtonHTML;
+                return;
+            }
+
+            // Untuk mode 'update', kita perlu mengirim semua data,
+            // tapi di sini kita hanya fokus pada 'create' dan 'update' nama.
+            // Apps Script Anda sudah menangani update parsial.
+            const data = {
+                action: formMode, // 'create' atau 'update'
+                mrn: formData.get('mrn'),
+                nama: formData.get('nama'),
+                pendaftaran: new Date().toISOString(),
+                timbang_tensi: document.getElementById('check-timbang_tensi').checked ? "" : "tidak dilakukan",
+                visus: document.getElementById('check-visus').checked ? "" : "tidak dilakukan",
+                lab: document.getElementById('check-lab').checked ? "" : "tidak dilakukan",
+                urine: document.getElementById('check-urine').checked ? "" : "tidak dilakukan",
+                ekg: document.getElementById('check-ekg').checked ? "" : "tidak dilakukan",
+                rontgen: document.getElementById('check-rontgen').checked ? "" : "tidak dilakukan",
+                dokter: document.getElementById('check-dokter').checked ? "" : "tidak dilakukan",
+                treadmill: document.getElementById('check-treadmill').checked ? "" : "tidak dilakukan",
+                bia: document.getElementById('check-bia').checked ? "" : "tidak dilakukan",
+                spirometri: document.getElementById('check-spirometri').checked ? "" : "tidak dilakukan",
+                audiometri: document.getElementById('check-audiometri').checked ? "" : "tidak dilakukan",
+                papsmear: document.getElementById('check-papsmear').checked ? "" : "tidak dilakukan",
+                total_waktu: ""
+            };
+
+            fetch(POST_URL, {
+                method: 'POST',
+                // Menggunakan text/plain adalah trik untuk menghindari preflight CORS yang kompleks
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(data),
+            })
+                .then(response => response.json()) // Langsung parse sebagai JSON
+                .then(res => {
+                    if (res.status) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: res.message || 'Data berhasil dikirim.',
+                        });
+                        form.reset(); // Mengosongkan form
+                        modal.style.display = 'none'; // Tutup modal
+                        fetchAndDisplayData(); // Muat ulang data di tabel
+                    } else {
+                        // Tampilkan pesan error dari server
+                        throw new Error(res.message || 'Terjadi kesalahan yang tidak diketahui di server.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error submitting data:', error);
+                    Swal.fire('Error', 'Gagal mengirim data: ' + error.message, 'error');
+                }).finally(() => {
+                    // Kembalikan tombol ke keadaan semula
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalButtonHTML;
+                });
+        });
+
+        // Event listener untuk tombol Aksi di tabel (Edit dan Hapus)
+        patientTableBody.addEventListener('click', e => {
+            const target = e.target;
+
+            // --- Handle QR MRN ---
+            if (target.closest('.qr-mrn-btn')) {
+                const mrn = target.closest('.qr-mrn-btn').dataset.mrn;
+                document.getElementById('qr-mrn-modal-title').textContent = `QR Code untuk MRN: ${mrn}`;
+
+                // Clear previous QR codes
+                document.getElementById('qr-code-mrn').innerHTML = '';
+
+                // Generate QR for MRN only
+                new QRCode(document.getElementById('qr-code-mrn'), {
+                    text: mrn,
+                    width: 250,
+                    height: 250,
+                });
+
+                // Tambahkan event listener untuk tombol cetak yang baru
+                const printBtn = document.getElementById('print-qr-btn');
+                printBtn.onclick = () => {
+                    window.open(`cetak-qr.html?mrn=${mrn}`, '_blank');
+                };
+
+                qrMrnModal.style.display = 'block';
+            }
+
+            // --- Handle Detail Page ---
+            if (target.closest('.detail-btn')) { // Use closest to handle clicks on icon
+                const button = target.closest('.detail-btn');
+                const mrn = button.dataset.mrn;
+                const detailContainer = document.getElementById('qr-code-detail-container');
+                
+                // Tampilkan modal SEGERA dengan status loading
+                detailContainer.innerHTML = 'Memuat detail...'; // Loading state
+                document.getElementById('qr-detail-modal-title').textContent = `Memuat Detail...`;
+                qrDetailModal.style.display = 'block';
+
+                fetch(FIND_URL(mrn))
+                    .then(response => response.json())
+                    .then(res => {
+                        // Buat judul menjadi 2 baris
+                        const detailTitle = document.getElementById('qr-detail-modal-title');
+                        detailTitle.innerHTML = `Detail Progres Pasien<br><span style="font-size: 1.1rem; font-weight: 400;">${res.data.nama}</span>`;
+
+                        if (res.status) {
+                            const pasien = res.data;
+                            detailContainer.innerHTML = ''; // Clear loading state
+
+                            // --- Bagian QR Code Halaman Detail ---
+                            const qrBox = document.createElement('div');
+                            qrBox.className = 'qr-box'; // Tambahkan kelas ini untuk menengahkan
+                            const qrDetailEl = document.createElement('div');
+                            qrBox.appendChild(qrDetailEl);
+
+                            const qrLabel = document.createElement('strong');
+                            qrLabel.textContent = 'QR Halaman Detail';
+                            qrBox.appendChild(qrLabel);
+                            detailContainer.appendChild(qrBox);
+
+                            // Arahkan ke file detail.html yang baru
+                            const detailUrl = `detail.html?mrn=${mrn}`;
+                            new QRCode(qrDetailEl, {
+                                text: detailUrl,
+                                width: 250,
+                                height: 250,
+                            });
+                        } else {
+                            Swal.fire('Error', 'Gagal memuat detail pasien.', 'error');
+                        }
+                    });
+            }
+
+            // --- Handle Edit ---
+            if (target.closest('.edit-btn')) { // Use closest to handle clicks on icon
+                const button = target.closest('.edit-btn');
+                const mrnToEdit = button.dataset.mrn;
+                const row = button.closest('tr');
+                // Ambil nama langsung dari tabel, tidak perlu fetch
+                const namaToEdit = row.querySelector('strong').textContent;
+                
+                // Isi form di modal dengan data yang sudah ada
+                formModeInput.value = 'update';
+                mrnInput.value = mrnToEdit;
+                mrnInput.readOnly = true; // MRN tidak boleh diubah
+                namaInput.value = namaToEdit;
+                
+                // Tampilkan modal SEGERA
+                modalTitle.textContent = 'Edit Data Pasien';
+                submitBtn.textContent = 'Update Data';
+                modal.style.display = 'block';
+            }
+
+            // Cek apakah yang diklik adalah tombol hapus
+            if (target.closest('.delete-btn')) {
+                const mrnToDelete = target.closest('.delete-btn').dataset.mrn; // Use closest to handle clicks on icon
+                Swal.fire({
+                    title: 'Apakah Anda yakin?',
+                    text: `Anda akan menghapus data dengan MRN: ${mrnToDelete}`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+
+                const data = {
+                    action: "delete",
+                    mrn: mrnToDelete
+                };
+
+                fetch(POST_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(data),
+                })
+                .then(response => response.json())
+                .then(res => {
+                    // Gunakan SweetAlert untuk konsistensi
+                    Swal.fire('Info', res.message, res.status ? 'success' : 'error');
+                    if (res.status) {
+                        fetchAndDisplayData(); // Muat ulang data jika berhasil
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting data!', error.message);
+                    Swal.fire('Error', 'Gagal menghapus data: ' + error.message, 'error');
+                });
+                    }
+                });
+            }
+        });
+
+        // Panggil fungsi untuk pertama kali saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayData);
+    </script>
+    <!-- Bootstrap JS (dihapus karena kita tidak menggunakan komponen JS-nya) -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script> -->
+
+</body>
+
+</html>
