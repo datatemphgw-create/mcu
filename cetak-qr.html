@@ -126,7 +126,7 @@
                         `;
 
                         new QRCode(document.getElementById("qrcode"), {
-                            text: pasien.mrn,
+                            text: mrn, // Ambil MRN langsung dari URL untuk memastikan konsistensi
                             width: 150,
                             height: 150,
                         });
