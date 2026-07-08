@@ -430,6 +430,9 @@
                 <button id="add-patient-btn" class="btn btn-success"><i class="fas fa-plus me-1"></i> Tambah Pasien</button>
             </div>
         </div>
+        <div class="my-3">
+            <input type="text" id="searchInput" class="form-control" placeholder="Cari berdasarkan Nama atau MRN...">
+        </div>
         <div class="table-responsive">
             <table class="data-table">
                 <thead>
@@ -732,7 +735,7 @@
                             detailContainer.appendChild(qrBox);
 
                             // Arahkan ke file detail.html yang baru
-                            const detailUrl = `https://datatemphgw-create.github.io/mcu/detail.html?mrn=${mrn}`;
+                            const detailUrl = `detail.html?mrn=${mrn}`;
                             new QRCode(qrDetailEl, {
                                 text: detailUrl,
                                 width: 250,
@@ -808,6 +811,26 @@
 
         // Panggil fungsi untuk pertama kali saat halaman dimuat
         document.addEventListener('DOMContentLoaded', fetchAndDisplayData);
+
+        // Logika untuk fungsionalitas pencarian
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('searchInput');
+            const tableBody = document.getElementById('patient-data-body');
+
+            searchInput.addEventListener('keyup', () => {
+                const filter = searchInput.value.toLowerCase();
+                const rows = tableBody.getElementsByTagName('tr');
+
+                for (const row of rows) {
+                    // Kolom "Pasien" (indeks 1) berisi nama dan MRN
+                    const patientCell = row.getElementsByTagName('td')[1];
+                    if (patientCell) {
+                        const textValue = patientCell.textContent || patientCell.innerText;
+                        row.style.display = textValue.toLowerCase().includes(filter) ? '' : 'none';
+                    }
+                }
+            });
+        });
     </script>
     <!-- Bootstrap JS (dihapus karena kita tidak menggunakan komponen JS-nya) -->
     <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script> -->
