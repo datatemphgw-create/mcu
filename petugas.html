@@ -749,24 +749,49 @@
 
             // --- Handle Edit ---
             if (target.closest('.edit-btn')) { // Use closest to handle clicks on icon
-                const button = target.closest('.edit-btn');
-                const mrnToEdit = button.dataset.mrn;
-                const row = button.closest('tr');
-                // Ambil nama langsung dari tabel, tidak perlu fetch
-                const namaToEdit = row.querySelector('strong').textContent;
-                
-                // Isi form di modal dengan data yang sudah ada
-                form.dataset.originalMrn = mrnToEdit; // Simpan MRN asli
-                formModeInput.value = 'update';
-                mrnInput.value = mrnToEdit;
-                mrnInput.readOnly = true; // MRN tidak boleh diubah
-                mrnInput.readOnly = false; // Izinkan MRN untuk diubah
-                namaInput.value = namaToEdit;
-                
-                // Tampilkan modal SEGERA
-                modalTitle.textContent = 'Edit Data Pasien';
-                submitBtn.textContent = 'Update Data';
+                const mrnToEdit = target.closest('.edit-btn').dataset.mrn;
+
+                // Tampilkan loading di modal sementara data diambil
+                modalTitle.textContent = 'Memuat Data Pasien...';
+                form.reset();
+                mrnInput.value = 'Memuat...';
+                namaInput.value = 'Memuat...';
+                mrnInput.readOnly = true;
+                namaInput.readOnly = true;
+
                 modal.style.display = 'block';
+
+                fetch(FIND_URL(mrnToEdit))
+                    .then(response => response.json())
+                    .then(res => {
+                        if (res.status) {
+                            const pasien = res.data;
+
+                            // Isi form di modal dengan data yang sudah ada
+                            formModeInput.value = 'update';
+                            mrnInput.value = pasien.mrn;
+                            mrnInput.readOnly = true; // MRN tidak boleh diubah saat edit
+                            namaInput.readOnly = false; // Izinkan nama untuk diubah
+                            namaInput.value = pasien.nama;
+
+                            // Sinkronkan checkbox
+                            const steps = ['timbang_tensi', 'visus', 'lab', 'urine', 'ekg', 'rontgen', 'dokter', 'treadmill', 'bia', 'spirometri', 'audiometri', 'papsmear'];
+                            steps.forEach(step => {
+                                const checkbox = document.getElementById(`check-${step}`);
+                                if (checkbox) {
+                                    // Checkbox akan ter-checklist jika nilainya BUKAN 'tidak dilakukan'
+                                    checkbox.checked = (pasien[step] !== 'tidak dilakukan');
+                                }
+                            });
+
+                            modalTitle.textContent = 'Edit Data Pasien';
+                            submitBtn.textContent = 'Update Data';
+                        } else {
+                            modal.style.display = 'none';
+                            Swal.fire('Error', 'Gagal memuat data pasien untuk diedit.', 'error');
+                        }
+                    })
+                    .catch(err => Swal.fire('Error', 'Terjadi kesalahan jaringan saat mengambil data.', 'error'));
             }
 
             // Cek apakah yang diklik adalah tombol hapus
