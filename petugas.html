@@ -735,7 +735,7 @@
                             detailContainer.appendChild(qrBox);
 
                             // Arahkan ke file detail.html yang baru
-                            const detailUrl = `https://datatemphgw-create.github.io/mcu/detail.html?mrn=${mrn}`;
+                            const detailUrl = `detail.html?mrn=${mrn}`;
                             new QRCode(qrDetailEl, {
                                 text: detailUrl,
                                 width: 250,
@@ -756,9 +756,11 @@
                 const namaToEdit = row.querySelector('strong').textContent;
                 
                 // Isi form di modal dengan data yang sudah ada
+                form.dataset.originalMrn = mrnToEdit; // Simpan MRN asli
                 formModeInput.value = 'update';
                 mrnInput.value = mrnToEdit;
                 mrnInput.readOnly = true; // MRN tidak boleh diubah
+                mrnInput.readOnly = false; // Izinkan MRN untuk diubah
                 namaInput.value = namaToEdit;
                 
                 // Tampilkan modal SEGERA
