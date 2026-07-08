@@ -452,7 +452,6 @@
                         <th>Spirometri</th>
                         <th>Audiometri</th>
                         <th>Papsmear</th>
-                        <th>Total Waktu</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
@@ -550,7 +549,7 @@
         // Fungsi untuk mengambil dan menampilkan data
         const fetchAndDisplayData = () => {
             // Tampilkan pesan loading
-            patientTableBody.innerHTML = '<tr><td colspan="17" style="text-align:center;">Memuat data...</td></tr>';
+            patientTableBody.innerHTML = '<tr><td colspan="16" style="text-align:center;">Memuat data...</td></tr>';
 
             fetch(READ_URL)
                 .then(response => response.json())
@@ -578,7 +577,6 @@
                                 <td class="status-cell">${formatStatus(pasien.spirometri)}</td>
                                 <td class="status-cell">${formatStatus(pasien.audiometri)}</td>
                                 <td class="status-cell">${formatStatus(pasien.papsmear)}</td>
-                                <td>${pasien.total_waktu || ''}</td>
                                 <td class="text-center">
                                     <button class="action-btn edit-btn" data-mrn="${pasien.mrn}" title="Edit"><i class="fas fa-edit"></i></button>
                                     <button class="action-btn qr-mrn-btn" data-mrn="${pasien.mrn}" title="QR MRN"><i class="fas fa-qrcode"></i></button>
@@ -589,7 +587,7 @@
                             patientTableBody.appendChild(row);
                         });
                     } else {
-                        patientTableBody.innerHTML = '<tr><td colspan="17" class="text-center">Belum ada data.</td></tr>';
+                        patientTableBody.innerHTML = '<tr><td colspan="16" class="text-center">Belum ada data.</td></tr>';
                     }
                 })
                 .catch(error => {
@@ -637,8 +635,7 @@
                 bia: document.getElementById('check-bia').checked ? "" : "tidak dilakukan",
                 spirometri: document.getElementById('check-spirometri').checked ? "" : "tidak dilakukan",
                 audiometri: document.getElementById('check-audiometri').checked ? "" : "tidak dilakukan",
-                papsmear: document.getElementById('check-papsmear').checked ? "" : "tidak dilakukan",
-                total_waktu: ""
+                papsmear: document.getElementById('check-papsmear').checked ? "" : "tidak dilakukan"
             };
 
             fetch(POST_URL, {
