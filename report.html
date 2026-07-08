@@ -8,6 +8,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <title>Laporan Waktu Pemeriksaan</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
@@ -79,18 +81,25 @@
             align-items: center;
             margin-bottom: 1rem;
         }
+
+        .filter-panel {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
     </style>
 </head>
 
 <body>
 
-    <div class="container">
+    <div class="container-fluid p-3">
         <div class="card shadow-sm">
             <div class="card-header">
                 <div class="header-controls">
                     <h1 class="mb-0 fs-4"><i class="fas fa-chart-line me-2"></i>Laporan Waktu Pemeriksaan Pasien</h1>
                     <div>
                         <a href="index.html" class="btn btn-secondary me-2"><i class="fas fa-home me-1"></i> Home</a>
+                        <button id="export-btn" class="btn btn-success me-2"><i class="fas fa-file-excel me-1"></i> Export</button>
                         <button id="refresh-btn" class="btn btn-primary">
                             <i class="fas fa-sync-alt me-2"></i>Refresh Data
                         </button>
@@ -98,11 +107,27 @@
                 </div>
             </div>
             <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <input type="text" id="searchInput" class="form-control" placeholder="Cari berdasarkan Nama atau MRN...">
+                    </div>
+                    <div class="col-md-8">
+                        <div class="filter-panel justify-content-end">
+                            <input type="date" id="startDate" class="form-control" style="width: auto;">
+                            <span>-</span>
+                            <input type="date" id="endDate" class="form-control" style="width: auto;">
+                            <button id="filter-btn" class="btn btn-info text-white">Filter</button>
+                            <button id="reset-filter-btn" class="btn btn-outline-secondary">Reset</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="table-responsive">
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>No</th>
+                                <th>Tanggal</th>
                                 <th>Pasien</th>
                                 <th>Pendaftaran</th>
                                 <th>Timbang Tensi</th>
@@ -132,6 +157,9 @@
     <script>
         const reportTableBody = document.getElementById('report-data-body');
         const refreshBtn = document.getElementById('refresh-btn');
+        let allPatientData = []; // Variabel untuk menyimpan semua data
+        let currentlyDisplayedData = []; // Variabel untuk menyimpan data yang sedang ditampilkan
+
 
         const BASE_URL = 'https://script.google.com/macros/s/AKfycbyy3KSVJTjsVozvo5MWcsbuPjYdzZ0t6c1Ske5DcNQXS5ERglK6JeFViLD4plQrVIlQ/exec';
         const READ_URL = `${BASE_URL}?action=read`;
@@ -153,50 +181,108 @@
             return `<span class="time-badge">${timeString}</span>`;
         };
 
+        // Helper function untuk memformat tanggal
+        const formatDate = (value) => {
+            if (!value) return '';
+            const date = new Date(value);
+            if (isNaN(date.getTime())) {
+                return '';
+            }
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // Bulan dimulai dari 0
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        };
+
+        // Helper function untuk menghitung total waktu
+        const calculateTotalTime = (pasien) => {
+            const startTime = new Date(pasien.pendaftaran);
+            if (isNaN(startTime.getTime())) {
+                return ''; // Tidak ada waktu mulai, tidak ada total waktu.
+            }
+
+            // Kumpulkan semua timestamp langkah yang valid
+            const stepTimestamps = [
+                pasien.timbang_tensi, pasien.visus, pasien.lab, pasien.urine,
+                pasien.ekg, pasien.rontgen, pasien.dokter, pasien.treadmill,
+                pasien.bia, pasien.spirometri, pasien.audiometri, pasien.papsmear
+            ].map(ts => new Date(ts)).filter(date => !isNaN(date.getTime()));
+
+            // Jika tidak ada langkah yang selesai, jangan tampilkan total waktu
+            if (stepTimestamps.length === 0) {
+                return '';
+            }
+
+            // Cari timestamp terakhir
+            const endTime = new Date(Math.max.apply(null, stepTimestamps));
+
+            const diffMs = endTime - startTime;
+            if (diffMs < 0) return ''; // Hindari nilai negatif
+
+            const totalMinutes = Math.floor(diffMs / 60000);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+
+            if (hours > 0) {
+                return `${hours} jam ${minutes} mnt`;
+            }
+            return `${minutes} mnt`;
+        };
+
+        // Fungsi untuk me-render tabel dari data yang diberikan
+        const renderTable = (data) => {
+            reportTableBody.innerHTML = ''; // Kosongkan tabel body
+            currentlyDisplayedData = data; // Simpan data yang ditampilkan
+
+            if (data.length > 0) {
+                data.forEach((pasien, index) => {
+                    const totalWaktu = calculateTotalTime(pasien);
+                    const tanggalPendaftaran = formatDate(pasien.pendaftaran);
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${tanggalPendaftaran}</td>
+                        <td>
+                            <strong>${pasien.nama}</strong><br>
+                            <small class="text-muted">${pasien.mrn}</small>
+                        </td>
+                        <td>${formatTimestamp(pasien.pendaftaran)}</td>
+                        <td>${formatTimestamp(pasien.timbang_tensi)}</td>
+                        <td>${formatTimestamp(pasien.visus)}</td>
+                        <td>${formatTimestamp(pasien.lab)}</td>
+                        <td>${formatTimestamp(pasien.urine)}</td>
+                        <td>${formatTimestamp(pasien.ekg)}</td>
+                        <td>${formatTimestamp(pasien.rontgen)}</td>
+                        <td>${formatTimestamp(pasien.dokter)}</td>
+                        <td>${formatTimestamp(pasien.treadmill)}</td>
+                        <td>${formatTimestamp(pasien.bia)}</td>
+                        <td>${formatTimestamp(pasien.spirometri)}</td>
+                        <td>${formatTimestamp(pasien.audiometri)}</td>
+                        <td>${formatTimestamp(pasien.papsmear)}</td>
+                        <td>${totalWaktu}</td>
+                    `;
+                    reportTableBody.appendChild(row);
+                });
+            } else {
+                reportTableBody.innerHTML = '<tr><td colspan="17" class="text-center">Tidak ada data yang cocok.</td></tr>';
+            }
+        };
+
         // Fungsi untuk mengambil dan menampilkan data
         const fetchAndDisplayReport = () => {
             const originalButtonHTML = refreshBtn.innerHTML;
             refreshBtn.disabled = true;
             refreshBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memuat...`;
-            reportTableBody.innerHTML = '<tr><td colspan="16" style="text-align:center;">Memuat data...</td></tr>';
 
             fetch(READ_URL)
                 .then(response => response.json())
                 .then(res => {
-                    reportTableBody.innerHTML = ''; // Kosongkan tabel body
-                    if (res.status && res.data.length > 0) {
-                        res.data.forEach((pasien, index) => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td>${index + 1}</td>
-                                <td>
-                                    <strong>${pasien.nama}</strong><br>
-                                    <small class="text-muted">${pasien.mrn}</small>
-                                </td>
-                                <td>${formatTimestamp(pasien.pendaftaran)}</td>
-                                <td>${formatTimestamp(pasien.timbang_tensi)}</td>
-                                <td>${formatTimestamp(pasien.visus)}</td>
-                                <td>${formatTimestamp(pasien.lab)}</td>
-                                <td>${formatTimestamp(pasien.urine)}</td>
-                                <td>${formatTimestamp(pasien.ekg)}</td>
-                                <td>${formatTimestamp(pasien.rontgen)}</td>
-                                <td>${formatTimestamp(pasien.dokter)}</td>
-                                <td>${formatTimestamp(pasien.treadmill)}</td>
-                                <td>${formatTimestamp(pasien.bia)}</td>
-                                <td>${formatTimestamp(pasien.spirometri)}</td>
-                                <td>${formatTimestamp(pasien.audiometri)}</td>
-                                <td>${formatTimestamp(pasien.papsmear)}</td>
-                                <td>${pasien.total_waktu || ''}</td>
-                            `;
-                            reportTableBody.appendChild(row);
-                        });
-                    } else {
-                        reportTableBody.innerHTML = '<tr><td colspan="16" class="text-center">Belum ada data.</td></tr>';
-                    }
+                    allPatientData = res.status ? res.data : [];
+                    renderTable(allPatientData);
                 })
                 .catch(error => {
                     console.error('Error fetching data!', error.message);
-                    reportTableBody.innerHTML = '<tr><td colspan="16" class="text-center text-danger">Gagal memuat data.</td></tr>';
+                    reportTableBody.innerHTML = '<tr><td colspan="17" class="text-center text-danger">Gagal memuat data.</td></tr>';
                 }).finally(() => {
                     refreshBtn.disabled = false;
                     refreshBtn.innerHTML = originalButtonHTML;
@@ -207,6 +293,77 @@
 
         // Panggil fungsi untuk pertama kali saat halaman dimuat
         document.addEventListener('DOMContentLoaded', fetchAndDisplayReport);
+    </script>
+
+    <script>
+        // Logika untuk fungsionalitas pencarian
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('searchInput');
+            const tableBody = document.getElementById('report-data-body');
+
+            const filterBtn = document.getElementById('filter-btn');
+            const resetFilterBtn = document.getElementById('reset-filter-btn');
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            const exportBtn = document.getElementById('export-btn');
+
+            const applyFilters = () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+                const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
+
+                if (startDate) startDate.setHours(0, 0, 0, 0);
+                if (endDate) endDate.setHours(23, 59, 59, 999);
+
+                const filteredData = allPatientData.filter(pasien => {
+                    const patientText = `${pasien.nama} ${pasien.mrn}`.toLowerCase();
+                    const registrationDate = new Date(pasien.pendaftaran);
+
+                    const matchesSearch = patientText.includes(searchTerm);
+                    const matchesDate = (!startDate || registrationDate >= startDate) && (!endDate || registrationDate <= endDate);
+
+                    return matchesSearch && matchesDate;
+                });
+
+                renderTable(filteredData);
+            };
+
+            searchInput.addEventListener('keyup', () => {
+                applyFilters();
+            });
+
+            filterBtn.addEventListener('click', () => {
+                applyFilters();
+            });
+
+            resetFilterBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                startDateInput.value = '';
+                endDateInput.value = '';
+                renderTable(allPatientData);
+            });
+
+            exportBtn.addEventListener('click', () => {
+                const dataToExport = currentlyDisplayedData.map(pasien => ({
+                    'Tanggal': formatDate(pasien.pendaftaran),
+                    'Nama': pasien.nama,
+                    'MRN': pasien.mrn,
+                    'Waktu Pendaftaran': formatTimestamp(pasien.pendaftaran).replace(/<[^>]*>?/gm, ''),
+                    'Waktu Timbang Tensi': formatTimestamp(pasien.timbang_tensi).replace(/<[^>]*>?/gm, ''),
+                    // ... tambahkan semua kolom waktu lainnya
+                    'Total Waktu': calculateTotalTime(pasien)
+                }));
+
+                if (dataToExport.length === 0) {
+                    alert("Tidak ada data untuk diekspor.");
+                } else {
+                    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan MCU");
+                    XLSX.writeFile(workbook, "Laporan_MCU.xlsx");
+                }
+            });
+        });
     </script>
 </body>
 
